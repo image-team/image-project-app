@@ -1,12 +1,23 @@
-import React, { useState } from "react";
-
+import React, { useState, useRef } from "react";
+import './App.css';
 function App() {
   const [selectedFile, setSelectedFile] = useState(null);
-  const [prediction, setPrediction] = useState("");
+  const [predictionR, setPredictionR] = useState("");
+  const [predictionE, setPredictionE] = useState("");
+  const [selectedImageURL, setSelectedImageURL] = useState("");
+  const appRef = useRef();
 
   const handleFileChange = (e) => {
+    setPredictionR("");
+    setPredictionE("");
     const file = e.target.files[0];
-    setSelectedFile(file);
+    
+    try {
+      setSelectedImageURL(URL.createObjectURL(file));
+      setSelectedFile(file);
+    } catch (error) {
+      console.error("Error creating object URL:", error);
+    }
   };
 
   const handleUpload = async () => {
@@ -15,13 +26,14 @@ function App() {
       formData.append("image", selectedFile);
 
       try {
-        const response = await fetch("http://localhost:5000/predict", {
+        const response = await fetch("http://127.0.0.1:5000/predict", {
           method: "POST",
           body: formData,
         });
 
         const data = await response.json();
-        setPrediction(data.class_name);
+        setPredictionR(data.restNet);
+        setPredictionE(data.efficientNet);
       } catch (error) {
         console.error("Error:", error);
       }
@@ -29,19 +41,28 @@ function App() {
   };
 
   return (
-    <div className="App">
+    <div className="App" ref={appRef}>
+      <img src="https://i.ytimg.com/vi/IiilA0dsciY/maxresdefault.jpg" alt="background" className="imageBg"/>
       <h1>Image Classification</h1>
       <input
+        className=""
         type="file"
         accept=".jpg, .jpeg, .png"
         onChange={handleFileChange}
+        onClick = {()=>setSelectedFile(null)}
       />
-      <button onClick={handleUpload}>Predict</button>
-      <div>
-        {prediction && (
-          <div>
-            <h2>Predicted Class:</h2>
-            <p>{prediction}</p>
+      <button className={`button-17 ${(selectedFile && selectedFile != '') ? 'okay':''}`} onClick={handleUpload}>Let's Predict</button>
+      <div className="predictionContainer">
+        {predictionR && (
+          <div className="predictionBox">
+            <h2>Predicted Class RestNet50: <span style={{'fontSize':'80%', 'fontWeight': "normal"}}>{predictionR}</span></h2>
+            <img src={selectedImageURL} alt="Selected Image" />
+          </div>
+        )}
+        {predictionE && (
+          <div className="predictionBox">
+            <h2>Predicted Class from EfficientNetB5 : <span style={{'fontSize':'80%', 'fontWeight': "normal"}}>{predictionE}</span></h2>
+            <img src={selectedImageURL} alt="Selected Image" />
           </div>
         )}
       </div>
